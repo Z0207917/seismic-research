@@ -1,2 +1,9 @@
-Catalogued earthquake data were obtained from the Incorporated Research Institutions for Seismology (IRIS) Wilber 3 system (https://ds.iris.edu/wilber3/). 
-Historical wind speed data were obtained from the Japan Meteorological Agency (JMA) Past Weather Data Download service (https://www.data.jma.go.jp/risk/obsdl/index.php). 
+# Seismic Noise Clustering Code
+
+Proprietary dissertation code for clustering analysis in seismic research.  
+
+## Contents
+- `Dissertation code.py` – Python script implementing the clustering workflow  
+- `quake-catalogue.csv` – catalogued earthquake data (from IRIS Wilber 3)  
+- `latest-jma-wind-data.csv` – historical wind speed data (from JMA Past Weather Data Download)  
+- `README.md` – project description  
