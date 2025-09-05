@@ -94,15 +94,13 @@ with h5py.File(h5_path, 'r') as f_meta:
 # ==================================
 # Build map of station locations
 # ==================================
-# to show on introduction section
-
 # map display names
 station_display = {
     'IMRH': 'SAGH02',
     'UWEH': 'KMMH13'
 }
 
-# build GeoDataFrame with display names
+# build geodataframe with display names
 gdf = gpd.GeoDataFrame(
     {'name': [station_display[s] for s in stations],
      'geometry': [Point(station_coords[s][1], station_coords[s][0]) for s in stations]},
@@ -120,7 +118,7 @@ pad = buffer_km * 1000
 ax.set_xlim(xmin - pad, xmax + pad)
 ax.set_ylim(ymin - pad, ymax + pad)
 
-# english labels via CartoDB Positron
+# use cartodb
 cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, crs=gdf.crs)
 
 # labels
@@ -442,19 +440,19 @@ labels_best = np.array([new_label_map[l] for l in labels_orig])
 # shift labels by 1
 labels_best = labels_best + 1
 
-# consistent colors by 1-based label id
+# consistent colours by label id
 sorted_clusters = list(range(1, best_k + 1))
 color_map = {c: base_cmap((c - 1) % base_cmap.N) for c in sorted_clusters}
 legend_handles = [Patch(facecolor=color_map[c], edgecolor='k', label=f'Cluster {c}', alpha=0.7)
                   for c in sorted_clusters]
 
-# features + cluster table for quick summaries
+# features + cluster table summaries
 df = pd.DataFrame(features_flat, columns=feature_names)
 df['cluster'] = labels_best
 df['silhouette'] = sil_best
 print('per-cluster means:\n', df.groupby('cluster')[feature_names + ['silhouette']].mean(), '\n')
 
-# attach to metadata (master table for window-level analysis)
+# attach to master table
 meta_df['cluster'] = labels_best
 
 # save per-cluster means csv
@@ -517,7 +515,7 @@ quake_df = (
 # restrict to events in japan
 quake_df = quake_df[quake_df['eventlocationname'].str.contains('japan', case=False, na=False)]
 
-# parse numerics and time, and round to 1 s to align with bins
+# parse numerics and time, and round to 1 second to align with bins
 quake_df[['latitude','longitude','magnitude']] = quake_df[['latitude','longitude','magnitude']].apply(
     pd.to_numeric, errors='coerce'
 )
@@ -557,7 +555,7 @@ def haversine(lat1, lon1, lat2, lon2):
     a = np.sin(dlat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dlon/2)**2
     return 6371.0 * 2 * np.arcsin(np.sqrt(a))
 
-# distance (km) from each event to each station
+# distance in km from each event to each station
 quake_df_raw = quake_df.copy()
 dist_df = pd.DataFrame({
     st: haversine(
@@ -569,7 +567,7 @@ dist_df = pd.DataFrame({
     for st in station_coords
 }, index=quake_df_raw.index)
 
-# pass rule per station: i) any magnitude within 100 km, ii) magnitude ≥ 2 within 200 km
+# pass rules per station: (i) any magnitude within 100 km, (ii) magnitude ≥ 2 within 200 km
 m = quake_df_raw['magnitude'].to_numpy()
 passes_by_station = {
     st: (((m >= 0) & (dist_df[st].to_numpy() <= 100)) |
@@ -972,7 +970,7 @@ wind_path = Path('/home3/prwx27/1. MH-Dissertation/wind speeds database from JMA
 if not wind_path.is_file():
     raise FileNotFoundError(f'CSV not found: {wind_path}')
 
-# we keep only first two columns timestamp + wind speed (timestamps are in jst)
+# keep only first two columns timestamp + wind speed (timestamps are in jst)
 df_wind = pd.read_csv(wind_path, encoding='shift_jis', skiprows=5, usecols=[0, 1])
 df_wind.columns = ['timestamp', 'wind_speed_mps']
 
@@ -1005,7 +1003,7 @@ plt.close(fig)
 # ==================================================
 # Resample clusters to hourly and merge with wind
 # ==================================================
-# comparison using clusters 2–4
+# comparison using clusters 2 to 4
 cols = [c for c in (2, 3, 4) if c in fixed_counts.columns]
 clusters_hourly = fixed_counts[cols].resample('h').sum()
 
@@ -1033,7 +1031,7 @@ for cluster_num in targets:
     # pearson correlation and significance at zero lag
     r0, p0 = pearsonr(x, y)
 
-    # cross-correlation (demean, normalize by std, length)
+    # cross-correlation (preprocess)
     x_demeaned = x - x.mean()
     y_demeaned = y - y.mean()
     corr = correlate(x_demeaned, y_demeaned, mode='full')
@@ -1206,7 +1204,6 @@ explained_B  = pca_full_B.explained_variance_ratio_
 cumulative_B = np.cumsum(explained_B)
 print('Cumulative explained variance (Station B):', cumulative_B)
 
-# Scree plot
 fig, ax = plt.subplots(figsize=(8, 4))
 xs = np.arange(1, len(explained_B) + 1)
 ax.plot(xs, explained_B, 'ok--')
@@ -1304,7 +1301,7 @@ for k in sil_cluster_range_B:
     fig.tight_layout()
     fig.savefig(fig_dir / f'silhouette_{station_b}_k{k}.png', dpi=600, bbox_inches='tight')
     plt.show(); plt.close(fig)
-    print(f'{station_b}: k = {k} → avg silhouette = {sil_avg:.4f}')
+    print(f'{station_b}: k = {k} has avg silhouette = {sil_avg:.4f}')
 
 # summary plot of average silhouette across chosen k's
 fig, ax = plt.subplots(figsize=(8, 4))
@@ -1328,13 +1325,13 @@ labels_orig_B = all_labels_B[best_k_B]
 sil_best_B    = all_sil_B[best_k_B]
 km_best_B     = all_km_B[best_k_B]
 
-# remap labels so 1 = largest cluster 
+# remap labels  
 cluster_sizes_B = pd.Series(labels_orig_B).value_counts().to_dict()
 sorted_clusters_orig_B = sorted(cluster_sizes_B, key=lambda x: cluster_sizes_B[x], reverse=True)
 new_label_map_B = {orig: new for new, orig in enumerate(sorted_clusters_orig_B)}
 labels_best_B   = np.array([new_label_map_B[l] for l in labels_orig_B]) + 1 
 
-# consistent colors by 1-based cluster id
+# consistent colours by cluster id
 sorted_clusters_B = list(range(1, best_k_B + 1))
 color_map_B = {c: base_cmap_B((start_idx_B - (c - 1)) % base_cmap_B.N) for c in sorted_clusters_B}
 legend_handles_B = [Patch(facecolor=color_map_B[c], edgecolor='k', label=f'Cluster {c}', alpha=0.7)
@@ -1358,7 +1355,7 @@ per_cluster_means_B = (
 per_cluster_means_B.to_csv(fig_dir / f'per_cluster_means_{station_b}.csv',
                            index=False, float_format='%.3f')
 
-# counts / proportions and stacked bar 
+# proportions and stacked bar 
 counts_B = pd.crosstab(meta_df_B['station'], meta_df_B['cluster'])
 props_B  = counts_B.div(counts_B.sum(axis=1), axis=0)
 print(f'Cluster counts by station — {station_b}:\n', counts_B, '\n')
@@ -1579,4 +1576,3 @@ fig.subplots_adjust(right=0.82)
 fig.savefig(fig_dir / 'cumulative_detections_IMRH_vs_UWEH_counts.png', dpi=600, bbox_inches='tight')
 plt.show()
 plt.close(fig)
-
