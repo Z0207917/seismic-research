@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
 
 # ==========
 # Imports    
@@ -24,9 +22,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, silhouette_samples
-
-
-# In[2]:
 
 
 # ========
@@ -55,9 +50,6 @@ n_init = 100               # number of initialisations
 kmeans_tol = 1e-3          # per-iteration convergence threshold
 max_kmeans_iter = 1000     # cap
 kmeans_algorithm = 'elkan' # faster for euclidean distances 
-
-
-# In[3]:
 
 
 # ==================================
@@ -97,9 +89,6 @@ with h5py.File(h5_path, 'r') as f_meta:
         st: (float(f_meta[st].attrs['lat']), float(f_meta[st].attrs['lon']))
         for st in stations
     }
-
-
-# In[4]:
 
 
 # ==================================
@@ -171,9 +160,6 @@ for st in stations:
     plt.close(fig)
 
 
-# In[5]:
-
-
 # ============================================================
 # Define the time period used as input to the cluster model
 # ============================================================
@@ -194,9 +180,6 @@ for day in pd.date_range(start_date, periods=n_days, freq='D', tz='UTC'):
     # reconstruct timestamp from samples check
     ts0 = wave_file_start + pd.Timedelta(nanoseconds=i0 * ns_per_sample)
     print(f'{label}: samples {i0} to {i1}  |  start timestamp: {ts0}')
-
-
-# In[6]:
 
 
 # ======================
@@ -234,9 +217,6 @@ def extract_features(x: np.ndarray, fs: float) -> np.ndarray:
     return np.array([dt_sq_trace, max_amp, freq_max_amp, center_freq, bandwidth, zcr, peak_rate], dtype=float)
 
 feature_names = ['dt_sq_trace', 'max_amp', 'freq_max_amp', 'center_freq', 'bandwidth', 'zcr', 'peak_rate']
-
-
-# In[7]:
 
 
 # ======================== STATION A ===========================
@@ -285,9 +265,6 @@ print(meta_df['station'].value_counts())
 print('features_flat shape:', features_flat.shape)
 
 
-# In[8]:
-
-
 # ==========================
 # Standardisation and pca
 # ==========================
@@ -328,9 +305,6 @@ Xp = pca_n.fit_transform(features_scaled)
 print('Xp shape:', Xp.shape)
 
 
-# In[9]:
-
-
 # =========================================
 # Optimal k selection for k-means model
 # =========================================
@@ -361,10 +335,6 @@ fig.tight_layout()
 fig.savefig(fig_dir / 'elbow_plot.png', dpi=600, bbox_inches='tight')
 plt.show()
 plt.close(fig)
-
-
-# In[10]:
-
 
 # silhouette analysis on k's at the curve in the elbow plot
 base_cmap = plt.get_cmap('tab10') # colour palette 
@@ -452,9 +422,6 @@ plt.show()
 plt.close(fig)
 
 
-# In[11]:
-
-
 # ===============================================================
 # Finalise k, relabel by size, and join labels back to windows 
 # ===============================================================
@@ -532,9 +499,6 @@ plt.show()
 plt.close(fig)
 
 
-# In[12]:
-
-
 # ==================================
 # Load and clean quake catalogue
 # ==================================
@@ -581,9 +545,6 @@ qt0, qt1 = week1_start_ts, week1_end_ts
 initial_mask = (quake_df['time'] >= qt0) & (quake_df['time'] <= qt1)
 initial_quakes = quake_df.loc[initial_mask, 'time'].nunique()
 print(f'Quakes in Week 1 before filtering: {initial_quakes}')
-
-
-# In[13]:
 
 
 # ===========================================
@@ -633,9 +594,6 @@ for st in station_coords:
     qst = quake_df_raw.loc[mask_st].copy()
     qst['distance_km'] = dist_df[st].loc[mask_st].to_numpy()
     quakes_by_station[st] = qst.reset_index(drop=True)
-
-
-# In[14]:
 
 
 # ==========================================================
@@ -747,9 +705,6 @@ fig.subplots_adjust(right=0.82, bottom=0.1)
 fig.savefig(fig_dir / 'cluster_waveform_density.png', dpi=600, bbox_inches='tight')
 plt.show()
 plt.close(fig)
-
-
-# In[15]:
 
 
 # =============================
@@ -880,9 +835,6 @@ else:
     plt.close(fig)
 
 
-# In[16]:
-
-
 # =================================
 # Earthquakes by cluster summary
 # =================================
@@ -950,9 +902,6 @@ df_quake_summary_out = df_quake_summary_out.sort_values('quake_time')
 df_quake_summary_out.to_csv(fig_dir / 'quakes_full_summary.csv', index=False)
 
 
-# In[17]:
-
-
 # =========================================
 # Labelled waveform overview at midnight
 # =========================================
@@ -1015,9 +964,6 @@ plt.show()
 plt.close(fig)
 
 
-# In[18]:
-
-
 # ===========================
 # Load and clean wind data
 # ===========================
@@ -1056,9 +1002,6 @@ plt.show()
 plt.close(fig)
 
 
-# In[19]:
-
-
 # ==================================================
 # Resample clusters to hourly and merge with wind
 # ==================================================
@@ -1070,9 +1013,6 @@ clusters_hourly = fixed_counts[cols].resample('h').sum()
 df_all_hourly = clusters_hourly.join(wind_hourly[['wind_speed_mps']], how='inner').dropna()
 print('Hourly combined data (clusters 2–3 vs wind speed):\n')
 print(df_all_hourly.head())
-
-
-# In[20]:
 
 
 # ==============================================
@@ -1153,17 +1093,10 @@ for cluster_num in targets:
         'best_lag_hr': best_lag
     })
 
-
-# In[21]:
-
-
 # summary table 
 df_summary = pd.DataFrame(results)
 print('Summary of cluster vs wind correlations (±6 h window):\n')
 print(df_summary)
-
-
-# In[22]:
 
 
 # ====================================
@@ -1217,9 +1150,6 @@ else:
     print('Not significant at the 10% level')
 
 
-# In[23]:
-
-
 # ======================== STATION B ===========================
 
 # ===============================================
@@ -1265,9 +1195,6 @@ print(meta_df_B['station'].value_counts())
 print('features_flat_B shape:', features_flat_B.shape)
 
 
-# In[24]:
-
-
 # =============================
 # B. Standardisation and pca
 # =============================
@@ -1299,9 +1226,6 @@ Xp_B = pca_n_B.fit_transform(features_scaled_B)
 print('Xp_B shape:', Xp_B.shape)
 
 
-# In[25]:
-
-
 # ===========================================
 # B. Optimal k selection for k-means model
 # ===========================================
@@ -1324,9 +1248,6 @@ ax.set_xticks(cluster_range)
 fig.tight_layout()
 fig.savefig(fig_dir / f'elbow_plot_{station_b}.png', dpi=600, bbox_inches='tight')
 plt.show(); plt.close(fig)
-
-
-# In[26]:
 
 
 # silhouette around the elbow
@@ -1397,9 +1318,6 @@ fig.savefig(fig_dir / f'silhouette_vs_nclusters_{station_b}.png', dpi=600, bbox_
 plt.show(); plt.close(fig)
 
 
-# In[31]:
-
-
 # =================================================
 # Finalise k, relabel by size, attach to windows 
 # =================================================
@@ -1464,9 +1382,6 @@ fig = ax.get_figure()
 fig.tight_layout()
 fig.savefig(fig_dir / f'cluster_distribution_{station_b}.png', dpi=600, bbox_inches='tight')
 plt.show(); plt.close(fig)
-
-
-# In[28]:
 
 
 # ======================================================
@@ -1579,9 +1494,6 @@ fig.tight_layout()
 fig.subplots_adjust(right=0.82, bottom=0.1)
 fig.savefig(fig_dir / f'cluster_waveform_density_{station_b}.png', dpi=600, bbox_inches='tight')
 plt.show(); plt.close(fig)
-
-
-# In[29]:
 
 
 # ============================================
